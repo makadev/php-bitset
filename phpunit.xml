@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         verbose="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         stopOnFailure="true">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./src</directory>
+    </include>
+    <report>
+      <php outputFile="./logs/unit.cov"/>
+    </report>
+  </coverage>
+  <testsuites>
+    <testsuite name="Unit">
+      <file>./tests/Unit/BitMapInitTest.php</file>
+      <file>./tests/Unit/BitMapBitOpsTest.php</file>
+      <file>./tests/Unit/BitMapRangeTest.php</file>
+      <file>./tests/Unit/BitMapBlockTest.php</file>
+      <file>./tests/Unit/BitSetTest.php</file>
+    </testsuite>
+  </testsuites>
+  <logging/>
+</phpunit>

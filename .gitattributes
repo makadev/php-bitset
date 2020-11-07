@@ -1,0 +1,13 @@
+## setup default
+* text=auto
+
+## do not convert line endings in shell scripts in docker path
+## those are not meant to be run in windows (and will error inside the container with CRLF)
+/docker/**/*.sh text eol=crlf
+
+## ignore dev files on export
+/docker         export-ignore
+/tests          export-ignore
+/phpunit.xml    export-ignore
+/psaml.xml      export-ignore
+/phpstan.xml    export-ignore
