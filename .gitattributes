@@ -9,5 +9,5 @@
 /docker         export-ignore
 /tests          export-ignore
 /phpunit.xml    export-ignore
-/psaml.xml      export-ignore
-/phpstan.xml    export-ignore
+/psalm.xml      export-ignore
+/phpstan.neon   export-ignore
