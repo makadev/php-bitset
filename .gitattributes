@@ -3,7 +3,7 @@
 
 ## do not convert line endings in shell scripts in docker path
 ## those are not meant to be run in windows (and will error inside the container with CRLF)
-/docker/**/*.sh text eol=crlf
+/docker/**/*.sh text eol=lf
 
 ## ignore dev files on export
 /docker         export-ignore
