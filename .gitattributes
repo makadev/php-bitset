@@ -6,6 +6,7 @@
 /docker/**/*.sh text eol=lf
 
 ## ignore dev files on export
+/.devcontainer  export-ignore
 /.run           export-ignore
 /docker         export-ignore
 /tests          export-ignore
