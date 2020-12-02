@@ -25,6 +25,9 @@ jobs:
         id: composer-cache
         run: |
           echo "::set-output name=dir::$(php composer.phar config cache-files-dir)"
+      # install composer
+      - shell: bash
+        run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # cache pull/push setup
       - uses: actions/cache@v2
         with:
@@ -32,9 +35,6 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
-      # install composer
-      - shell: bash
-        run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # install dependencies
       - shell: bash
         run: php composer.phar install
