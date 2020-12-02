@@ -1,0 +1,50 @@
+name: CI Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  dev-deps:
+    name: Install Dev Dependencies
+    runs-on: ubuntu-latest
+    container: php:8.0-cli-buster
+    steps:
+      # checkout code
+      - name: checkout code
+        uses: actions/checkout@v2
+      # install composer
+      - shell: bash
+        run: chmod +x ./github/scripts/install-composer.sh && ./github/scripts/install-composer.sh
+      # install dependencies
+      - shell: bash
+        run: composer install
+      # store dev-deps as artifacts (only store for 1 day)
+      - name: archive dev dependencies
+        uses: actions/upload-artifact@v2
+        with:
+          name: composer-dependencies
+          path: vendor
+          retention-days: 1
+
+  testing:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    container: php:8.0-cli-buster
+    needs: [dev-deps]
+    steps:
+      # checkout code
+      - name: checkout code
+        uses: actions/checkout@v2
+      # fetch dev-deps
+      - name: download dev dependencies
+        uses: actions/download-artifact@v2
+        with:
+          name: composer-dependencies
+      # run phpunit (no coverage)
+      - shell: bash
+        run: vendor/phpunit/phpunit/phpunit -c phpunit.xml --no-coverage
