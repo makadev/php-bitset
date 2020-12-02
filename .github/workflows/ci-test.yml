@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
       # install composer
       - shell: bash
-        run: chmod +x ./github/scripts/install-composer.sh && ./github/scripts/install-composer.sh
+        run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # install dependencies
       - shell: bash
         run: composer install
