@@ -10,3 +10,4 @@ echo "xdebug.remote_autostart=off" >>  ${PHP_INI_DIR}/conf.d/${INI_NAME}
 echo "xdebug.remote_port=9001" >>  ${PHP_INI_DIR}/conf.d/${INI_NAME}
 echo "xdebug.remote_handler=dbgp" >>  ${PHP_INI_DIR}/conf.d/${INI_NAME}
 echo "xdebug.remote_connect_back=0" >>  ${PHP_INI_DIR}/conf.d/${INI_NAME}
+echo "xdebug.mode=develop,coverage,debug" >>  ${PHP_INI_DIR}/conf.d/${INI_NAME}
