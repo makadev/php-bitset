@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     container: php:8.0-cli-buster
     steps:
-      # checkout code
-      - name: checkout code
-        uses: actions/checkout@v2
       # install wget / unzip / git which might be used for composer setup and by composer itself
       - shell: bash
         run: apt-get update && apt-get -y install --no-install-recommends wget unzip git
+      # checkout code
+      - name: checkout code
+        uses: actions/checkout@v2
       # install composer
       - shell: bash
         run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
