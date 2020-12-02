@@ -20,21 +20,21 @@ jobs:
       # checkout code
       - name: checkout code
         uses: actions/checkout@v2
+      # install composer
+      - shell: bash
+        run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # get composer cache files directory
       - name: get composer cache files directory
         id: composer-cache
         run: |
           echo "::set-output name=dir::$(php composer.phar config cache-files-dir)"
-      # install composer
-      - shell: bash
-        run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # cache pull/push setup
       - uses: actions/cache@v2
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}--composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-composer-
+            ${{ runner.os }}--composer-
       # install dependencies
       - shell: bash
         run: php composer.phar install
