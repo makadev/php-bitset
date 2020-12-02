@@ -20,6 +20,23 @@ jobs:
       # checkout code
       - name: checkout code
         uses: actions/checkout@v2
+      # get php version for cache key
+      - name: get php version
+        id: php-version
+        run: |
+          echo "::set-output name=ver::php-$(php -v | grep -o '^PHP [0-9\.]\+' | grep -o '[0-9\.]\+$')"
+      # get composer cache files directory
+      - name: get composer cache files directory
+        id: composer-cache
+        run: |
+          echo "::set-output name=dir::$(php composer.phar config cache-files-dir)"
+      # cache pull/push setup
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-{{ steps.php-version.outputs.ver }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-{{ steps.php-version.outputs.ver }}-composer-
       # install composer
       - shell: bash
         run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
