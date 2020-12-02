@@ -5,7 +5,8 @@
 ## those are not meant to be run in windows (and will error inside the container with CRLF)
 /docker/**/*.sh text eol=lf
 
-## ignore dev files on export
+## ignore dev/ci files on export
+/.github        export-ignore
 /.devcontainer  export-ignore
 /.run           export-ignore
 /docker         export-ignore

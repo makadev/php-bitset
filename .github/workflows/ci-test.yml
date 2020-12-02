@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  dev-deps:
+  dev-tests:
     name: Install Dev Dependencies
     runs-on: ubuntu-latest
     container: php:8.0-cli-buster
@@ -26,28 +26,6 @@ jobs:
       # install dependencies
       - shell: bash
         run: php composer.phar install
-      # store dev-deps as artifacts (only store for 1 day)
-      - name: archive dev dependencies
-        uses: actions/upload-artifact@v2
-        with:
-          name: composer-dependencies
-          path: vendor
-          retention-days: 1
-
-  testing:
-    name: Run Unit Tests
-    runs-on: ubuntu-latest
-    container: php:8.0-cli-buster
-    needs: [dev-deps]
-    steps:
-      # checkout code
-      - name: checkout code
-        uses: actions/checkout@v2
-      # fetch dev-deps
-      - name: download dev dependencies
-        uses: actions/download-artifact@v2
-        with:
-          name: composer-dependencies
       # run phpunit (no coverage)
       - shell: bash
         run: vendor/phpunit/phpunit/phpunit -c phpunit.xml --no-coverage
