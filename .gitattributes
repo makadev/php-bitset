@@ -6,8 +6,11 @@
 /docker/**/*.sh text eol=lf
 
 ## ignore dev files on export
+/.run           export-ignore
 /docker         export-ignore
 /tests          export-ignore
 /phpunit.xml    export-ignore
 /psalm.xml      export-ignore
 /phpstan.neon   export-ignore
+/psalm-check.php    export-ignore
+/phpstan-check.php  export-ignore
