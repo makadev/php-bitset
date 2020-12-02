@@ -17,12 +17,15 @@ jobs:
       # checkout code
       - name: checkout code
         uses: actions/checkout@v2
+      # install wget
+      - shell: bash
+        run: apt-get update && apt-get -y install --no-install-recommends wget
       # install composer
       - shell: bash
         run: chmod +x .github/scripts/install-composer.sh && .github/scripts/install-composer.sh
       # install dependencies
       - shell: bash
-        run: composer install
+        run: php composer.phar install
       # store dev-deps as artifacts (only store for 1 day)
       - name: archive dev dependencies
         uses: actions/upload-artifact@v2
