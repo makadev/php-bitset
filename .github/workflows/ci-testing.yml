@@ -1,4 +1,4 @@
-name: CI Test
+name: CI Testing
 
 on:
   push:
@@ -10,8 +10,8 @@ on:
 
 jobs:
   dev-tests:
-    name: Install Dev Dependencies
-    runs-on: ubuntu-latest
+    name: Run Unit Tests
+    runs-on: ubuntu-20.04
     container: php:8.0-cli-buster
     steps:
       # install wget / unzip / git which might be used for composer setup and by composer itself
