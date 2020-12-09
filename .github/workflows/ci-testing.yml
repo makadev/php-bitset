@@ -16,7 +16,7 @@ jobs:
     steps:
       # run phpunit (no coverage)
       - shell: bash
-        run: mkdir -p /__w && chown -R tester:tester /__w
+        run: sudo chown -R tester:tester ${{ github.workspace }}
       # checkout code
       - name: checkout code
         uses: actions/checkout@v2
