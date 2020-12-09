@@ -12,8 +12,13 @@ jobs:
   dev-tests:
     name: Run Unit Tests
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        container:
+          - ghcr.io/makadev/ci-images/php:7.4-cli
+          - ghcr.io/makadev/ci-images/php:8.0-cli
     container:
-      image: ghcr.io/makadev/ci-images/php:8.0-cli
+      image: ${{ matrix.container }}
       options: --user 1001
     steps:
       # checkout code
