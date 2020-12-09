@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-20.04
     container:
       image: ghcr.io/makadev/ci-images/php:8.0-cli
-      options: --user 1000
+      options: --user 1001
     steps:
       # checkout code
       - name: checkout code
