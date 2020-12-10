@@ -23,7 +23,7 @@ class BitMap {
      *
      * @var int $bitLength
      */
-    private int $bitLength;
+    private $bitLength;
 
     /**
      * Get the Length of this BitMap in Bits
@@ -36,8 +36,10 @@ class BitMap {
 
     /**
      * Length in Words (for internal Array of Words)
+     *
+     * @var int $wordLength
      */
-    private int $wordLength;
+    private $wordLength;
 
     /**
      * Get the Length of BitMap in Words
@@ -53,7 +55,7 @@ class BitMap {
      *
      * @var SplFixedArray<int> $internalBitMap
      */
-    private SplFixedArray $internalBitMap;
+    private $internalBitMap;
 
     /**
      * Helper throwing Out of Bounds Exception when the $position doesn't fit the bitLength of this Structure
