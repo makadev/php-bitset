@@ -1,61 +1,102 @@
 <?php
 
-use makadev\BitSet\BitMap;
+use makadev\BitSet\BitMap\SPLArrayBitMap;
+use makadev\BitSet\BitMap\StringBitMap;
 use PHPUnit\Framework\TestCase;
 
 class BitMapBitOpsTest extends TestCase {
 
-    public function testBitMapOutOfBoundsWhenSetOverLength(): void {
-        $bitMap = new BitMap(1);
+    public function implementationProvider(): array {
+        return [
+            [makadev\BitSet\BitMap::class],
+            [SPLArrayBitMap::class],
+            [StringBitMap::class],
+        ];
+    }
+
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenSetOverLength(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->set(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->set(1);
     }
 
-    public function testBitMapOutOfBoundsWhenSetNegative(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenSetNegative(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->set(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->set(-1);
     }
 
-    public function testBitMapOutOfBoundsWhenUnsetOverLength(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenUnsetOverLength(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->unset(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->unset(1);
     }
 
-    public function testBitMapOutOfBoundsWhenUnsetNegative(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenUnsetNegative(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->unset(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->unset(-1);
     }
 
-    public function testBitMapOutOfBoundsWhenTestOverLength(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenTestOverLength(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->test(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->test(1);
     }
 
-    public function testBitMapOutOfBoundsWhenTestNegative(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapOutOfBoundsWhenTestNegative(string $implementation): void {
+        $bitMap = new $implementation(1);
         $bitMap->test(0);
         $this->expectException(OutOfBoundsException::class);
         $bitMap->test(-1);
     }
 
-    public function testBitMapLength(): void {
-        $bitMap = new BitMap(16);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testBitMapLength(string $implementation): void {
+        $bitMap = new $implementation(16);
         $this->assertEquals(16, $bitMap->getBitLength());
-        $bitMap = new BitMap(432);
+        $bitMap = new $implementation(432);
         $this->assertEquals(432, $bitMap->getBitLength());
     }
 
-    public function testSetUnsetBitResult(): void {
-        $bitMap = new BitMap(1);
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function testSetUnsetBitResult(string $implementation): void {
+        $bitMap = new $implementation(1);
         $this->assertTrue($bitMap->set(0));
         $this->assertFalse($bitMap->set(0));
         $this->assertTrue($bitMap->test(0));
@@ -72,27 +113,39 @@ class BitMapBitOpsTest extends TestCase {
      * @return array<array<int>>
      */
     public function setUnsetTestProvider(): array {
-        return [
-            // size, position
-            [1, 0],
-            // Single Word, MSB/LSB
-            [BitMap::BitPerWord, 0],
-            [BitMap::BitPerWord, BitMap::BitPerWord - 1],
-            // Multi Word, MSB/LSB per Word
-            [BitMap::BitPerWord * 2, 0],
-            [BitMap::BitPerWord * 2, BitMap::BitPerWord - 1],
-            [BitMap::BitPerWord * 2, BitMap::BitPerWord],
-            [BitMap::BitPerWord * 2, BitMap::BitPerWord * 2 - 1]
-        ];
+        $make_unset = function ($bits) {
+            return [
+                // size, position
+                [1, 0],
+                // Single Word, MSB/LSB
+                [$bits, 0],
+                [$bits, $bits - 1],
+                // Multi Word, MSB/LSB per Word
+                [$bits * 2, 0],
+                [$bits * 2, $bits - 1],
+                [$bits * 2, $bits],
+                [$bits * 2, $bits * 2 - 1]
+            ];
+        };
+        $unset = array_merge($make_unset(8), $make_unset(16), $make_unset(32), $make_unset(64));
+        $implementations = $this->implementationProvider();
+        $provided = [];
+        foreach ($implementations as $implparams) {
+            foreach ($unset as $unsetparams) {
+                $provided[] = array_merge($implparams, $unsetparams);
+            }
+        }
+        return $provided;
     }
 
     /**
      * @dataProvider setUnsetTestProvider
+     * @param string $implementation
      * @param int $size
      * @param int $position
      */
-    public function testSetUnsetTestOperation(int $size, int $position): void {
-        $bitMap = new BitMap($size);
+    public function testSetUnsetTestOperation(string $implementation, int $size, int $position): void {
+        $bitMap = new $implementation($size);
         $this->assertFalse($bitMap->test($position));
         $bitMap->set($position);
         $this->assertTrue($bitMap->test($position));
@@ -100,17 +153,21 @@ class BitMapBitOpsTest extends TestCase {
         $this->assertFalse($bitMap->test($position));
     }
 
-    public function setUnsetTestTogether(): void {
+    /**
+     * @dataProvider implementationProvider
+     * @param string $implementation
+     */
+    public function setUnsetTestTogether(string $implementation): void {
         $bits = [
             0,
-            BitMap::BitPerWord - 1,
-            BitMap::BitPerWord,
-            BitMap::BitPerWord * 2 - 1,
+            $implementation::BitPerWord - 1,
+            $implementation::BitPerWord,
+            $implementation::BitPerWord * 2 - 1,
             85,
             119,
             149,
         ];
-        $bitMap = new BitMap(150);
+        $bitMap = new $implementation(150);
         // single bit mod
         foreach ($bits as $position) {
             $this->assertFalse($bitMap->test($position));

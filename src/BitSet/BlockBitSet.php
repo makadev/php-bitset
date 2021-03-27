@@ -1,14 +1,18 @@
 <?php
 
 
-namespace makadev\BitSet;
+namespace makadev\BitSet\BitSet;
 
-/**
- * Class for dense integer sets and operations.
- *
- * @deprecated 1.1.0
- */
-class BitSet extends BitMap {
+use makadev\BitSet\BitMap\BlockBitMap;
+use makadev\BitSet\Contract\BitMap;
+use makadev\BitSet\Contract\BitSet;
+use makadev\BitSet\Contract\BlockMap;
+
+abstract class BlockBitSet extends BlockBitMap implements BitSet {
+
+    public function __construct(int $bitLength, BlockMap $blockMap) {
+        parent::__construct($bitLength, $blockMap);
+    }
 
     /**
      * Check if bitset is empty.

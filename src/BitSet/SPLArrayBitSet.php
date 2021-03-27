@@ -1,10 +1,10 @@
 <?php
 
-namespace makadev\BitSet\BitMap;
+namespace makadev\BitSet\BitSet;
 
 use makadev\BitSet\BlockMap\SPLArrayBlockMap;
 
-class SPLArrayBitMap extends BlockBitMap {
+class SPLArrayBitSet extends BlockBitSet {
 
     public function __construct(int $bitLength) {
         $blocks = intdiv($bitLength, SPLArrayBlockMap::BytesPerBlock() * 8);

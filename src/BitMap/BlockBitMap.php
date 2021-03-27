@@ -1,47 +1,46 @@
 <?php
 
 
-namespace makadev\BitSet;
+namespace makadev\BitSet\BitMap;
 
+use makadev\BitSet\Contract\BitMap;
+use makadev\BitSet\Contract\BlockMap;
 use OutOfBoundsException;
-use SplFixedArray;
+use RuntimeException;
 
-/**
- * Class for (dense) bitmap manipulation.
- *
- * @deprecated 1.1.0
- */
-class BitMap {
+abstract class BlockBitMap implements BitMap {
 
     /**
-     * COMPAT
-     *
-     * @return int
-     */
-    public function getBlockLength(): int {
-        return $this->getWordLength();
-    }
-
-    /**
-     * COMPAT
+     * Return the amount of bits each block can store
      *
      * @return int
      */
     public function getBitsPerBlock(): int {
-        return self::BitPerWord;
+        return $this->blockMap::BytesPerBlock() * 8;
     }
 
     /**
-     * Nr. Bits per Machine Word
+     * Internal BlockMap holding the BitMap
+     *
+     * @var BlockMap $blockMap
      */
-    public const BitPerWord = PHP_INT_SIZE * 8;
+    protected $blockMap;
+
+    /**
+     * Return the length in Blocks for the underlying BlockMap
+     *
+     * @return int
+     */
+    public function getBlockLength(): int {
+        return $this->blockMap->getBlockLength();
+    }
 
     /**
      * Length in Bits
      *
      * @var int $bitLength
      */
-    private $bitLength;
+    protected $bitLength;
 
     /**
      * Get the Length of this BitMap in Bits
@@ -51,29 +50,6 @@ class BitMap {
     public function getBitLength(): int {
         return $this->bitLength;
     }
-
-    /**
-     * Length in Words (for internal Array of Words)
-     *
-     * @var int $wordLength
-     */
-    private $wordLength;
-
-    /**
-     * Get the Length of BitMap in Words
-     *
-     * @return int
-     */
-    public function getWordLength(): int {
-        return $this->wordLength;
-    }
-
-    /**
-     * Internal BitMap
-     *
-     * @var SplFixedArray<int> $internalBitMap
-     */
-    private $internalBitMap;
 
     /**
      * Helper throwing Out of Bounds Exception when the $position doesn't fit the bitLength of this Structure
@@ -89,14 +65,14 @@ class BitMap {
     }
 
     /**
-     * Helper throwing Out of Bounds Exception when the $position doesn't fit the wordLength of this Structure
+     * Helper throwing Out of Bounds Exception when the $position doesn't fit the blockLength of this Structure
      *
      * @param integer $position
      * @return void
-     * @throws OutOfBoundsException if $position is < 0 or >= word length
+     * @throws OutOfBoundsException if $position is < 0 or >= block length
      */
-    protected function assertInWordBounds(int $position) {
-        if (($position < 0) || ($position >= $this->wordLength)) {
+    protected function assertInBlockBounds(int $position) {
+        if (($position < 0) || ($position >= $this->blockMap->getBlockLength())) {
             throw new OutOfBoundsException();
         }
     }
@@ -108,55 +84,46 @@ class BitMap {
      * @return void
      */
     protected function assertBitLengthMatch(BitMap $bitMap) {
-        if ($this->bitLength !== $bitMap->bitLength) {
+        if ($this->bitLength !== $bitMap->getBitLength()) {
             throw new OutOfBoundsException();
         }
     }
 
     /**
-     * Returning the min. amount of Words needed to store the given bit length.
-     *
-     * @param int $bitLength
-     * @return int
-     */
-    public static function BitLength2WordLength(int $bitLength): int {
-        if (($rest = ($bitLength % self::BitPerWord)) !== 0) {
-            $bitLength = $bitLength + (self::BitPerWord - $rest);
-        }
-        return intdiv($bitLength, self::BitPerWord);
-    }
-
-    /**
-     * Return the position of the word which stores the given bit.
+     * Return the position of the block which stores the given bit.
      *
      * @param int $bit
      * @return int
      */
-    public static function BitToBufferIndex(int $bit): int {
-        return intdiv($bit, self::BitPerWord);
+    public function bitToIndex(int $bit): int {
+        return intdiv($bit, $this->getBitsPerBlock());
     }
 
     /**
-     * Return the position of the bit in it's respective "storage" word.
+     * Return the position of the bit in it's respective block.
      *
      * @param int $bit
      * @return int
      */
-    public static function BitToWordIndex(int $bit): int {
-        return $bit % self::BitPerWord;
+    public function bitToBlockIndex(int $bit): int {
+        return $bit % $this->getBitsPerBlock();
     }
 
     /**
      * BitMap constructor with given bit length
      *
      * @param int $bitLength
+     * @param BlockMap $blockMap
      */
-    public function __construct(int $bitLength) {
+    public function __construct(int $bitLength, BlockMap $blockMap) {
         $this->bitLength = $bitLength;
-        $this->wordLength = self::BitLength2WordLength($bitLength);
-        $this->internalBitMap = new SplFixedArray($this->wordLength);
-        for ($i = 0; $i < $this->wordLength; $i++) {
-            $this->internalBitMap[$i] = 0;
+        $this->blockMap = $blockMap;
+        $bitsPerBlock = $this->blockMap->bytesPerBlock() * 8;
+        $numBits = $this->blockMap->getBlockLength() * $bitsPerBlock;
+        if ($bitLength > $numBits) {
+            // @codeCoverageIgnoreStart
+            throw new RuntimeException("Insufficient BlockMap length for given bitLength");
+            // @codeCoverageIgnoreEnd
         }
     }
 
@@ -164,11 +131,7 @@ class BitMap {
      * Clone and make sure the internal Bitmap is duplicated correctly.
      */
     public function __clone() {
-        $cloneSet = $this->internalBitMap;
-        $this->internalBitMap = new SplFixedArray($this->wordLength);
-        for ($i = 0; $i < $this->wordLength; $i++) {
-            $this->internalBitMap[$i] = $cloneSet[$i];
-        }
+        $this->blockMap = clone $this->blockMap;
     }
 
     /**
@@ -176,16 +139,17 @@ class BitMap {
      *
      * @param int $position
      * @return bool true if bit was changed from 0 to 1, otherwise false
+     * @throws OutOfBoundsException if position is invalid
      */
     public function set(int $position): bool {
         $this->assertInBounds($position);
-        $index = self::BitToBufferIndex($position);
-        $shift = self::BitToWordIndex($position);
+        $index = $this->bitToIndex($position);
+        $shift = $this->bitToBlockIndex($position);
         $setBit = 1 << $shift;
-        $block = $this->internalBitMap[$index];
+        $block = $this->blockMap->readBlockMap($index);
         $bitClean = !(($block & $setBit) === $setBit);
         if ($bitClean) {
-            $this->internalBitMap[$index] = $block | $setBit;
+            $this->blockMap->writeBlockMap($index, $block | $setBit);
         }
         return $bitClean;
     }
@@ -195,16 +159,17 @@ class BitMap {
      *
      * @param int $position
      * @return bool true if bit was changed from 1 to 0, otherwise false
+     * @throws OutOfBoundsException if position is invalid
      */
     public function unset(int $position): bool {
         $this->assertInBounds($position);
-        $index = self::BitToBufferIndex($position);
-        $shift = self::BitToWordIndex($position);
+        $index = $this->bitToIndex($position);
+        $shift = $this->bitToBlockIndex($position);
         $unsetBit = 1 << $shift;
-        $block = $this->internalBitMap[$index];
+        $block = $this->blockMap->readBlockMap($index);
         $bitSet = ($block & $unsetBit) === $unsetBit;
         if ($bitSet) {
-            $this->internalBitMap[$index] = $block ^ $unsetBit;
+            $this->blockMap->writeBlockMap($index, $block ^ $unsetBit);
         }
         return $bitSet;
     }
@@ -214,18 +179,19 @@ class BitMap {
      *
      * @param int $position
      * @return bool true if bit at given position is set, false if it's not set
+     * @throws OutOfBoundsException if position is invalid
      */
     public function test(int $position): bool {
         $this->assertInBounds($position);
-        $index = self::BitToBufferIndex($position);
-        $shift = self::BitToWordIndex($position);
+        $index = $this->bitToIndex($position);
+        $shift = $this->bitToBlockIndex($position);
         $testBit = 1 << $shift;
-        return ($this->internalBitMap[$index] & $testBit) === $testBit;
+        return ($this->blockMap->readBlockMap($index) & $testBit) === $testBit;
     }
 
     /**
      * Execute given callable with signature function(int $block, int $position): int|false
-     * for each word sized block of the internal bitmap.
+     * for each block sized block of the internal bitmap.
      *
      * If given function returns false, iteration will be stopped and eachBlock returns with false.
      * If given function returns an int, the block at current $position will be set to that.
@@ -239,7 +205,7 @@ class BitMap {
      *
      */
     public function eachBlock(callable $f): bool {
-        for ($i = 0; $i < $this->wordLength; $i++) {
+        for ($i = 0; $i < $this->blockMap->getBlockLength(); $i++) {
             $block = $this->getBlock($i);
             $update = $f($block, $i);
             if ($update === false) {
@@ -253,16 +219,18 @@ class BitMap {
     }
 
     /**
-     * Get bitmap block (Machine Word packed bits) at given position.
+     * Get bitmap block at given position.
      *
      * @param int $position
      * @return int
+     * @throws OutOfBoundsException if position is invalid
      */
     public function getBlock(int $position): int {
-        $this->assertInWordBounds($position);
-        $result = $this->internalBitMap[$position];
-        if ($position === $this->wordLength - 1) {
-            $lastBlockUpperBit = $this->bitLength % self::BitPerWord;
+        $this->assertInBlockBounds($position);
+        $fullblockMask = ~((~0) << $this->getBitsPerBlock());
+        $result = $this->blockMap->readBlockMap($position) & $fullblockMask;
+        if ($position === $this->blockMap->getBlockLength() - 1) {
+            $lastBlockUpperBit = $this->bitLength % $this->getBitsPerBlock();
             if ($lastBlockUpperBit !== 0) {
                 $upperBit = 1 << ($lastBlockUpperBit - 1);
                 $mask = ~((~($upperBit)) + 1) | $upperBit;
@@ -273,17 +241,18 @@ class BitMap {
     }
 
     /**
-     * Set bitmap block (Machine Word packed bits) at given position.
+     * Set bitmap block at given position.
      *
      * @param int $position
      * @param int $block
      * @return bool true if there was an actual change, false otherwise
+     * @throws OutOfBoundsException if position is invalid
      */
     public function setBlock(int $position, int $block): bool {
-        $this->assertInWordBounds($position);
-        $before = $this->internalBitMap[$position];
-        if ($position === $this->wordLength - 1) {
-            $lastBlockUpperBit = $this->bitLength % self::BitPerWord;
+        $this->assertInBlockBounds($position);
+        $before = $this->blockMap->readBlockMap($position);
+        if ($position === $this->blockMap->getBlockLength() - 1) {
+            $lastBlockUpperBit = $this->bitLength % $this->getBitsPerBlock();
             if ($lastBlockUpperBit !== 0) {
                 $upperBit = 1 << ($lastBlockUpperBit - 1);
                 $mask = ~((~($upperBit)) + 1) | $upperBit;
@@ -291,7 +260,7 @@ class BitMap {
             }
         }
         if ($before !== $block) {
-            $this->internalBitMap[$position] = $block;
+            $this->blockMap->writeBlockMap($position, $block);
             return true;
         }
         return false;
@@ -303,6 +272,7 @@ class BitMap {
      * @param int $from
      * @param int $to
      * @return bool true if at least one bit was changed from 0 to 1, otherwise false
+     * @throws OutOfBoundsException if from or to is invalid
      */
     public function setRange(int $from, int $to): bool {
         $this->assertInBounds($from);
@@ -315,39 +285,40 @@ class BitMap {
         if ($from === $to) {
             return $this->set($from);
         }
+        $fullblockMask = ~((~0) << $this->getBitsPerBlock());
         // f.e. bit 4 (0 index) = ~b00010000 -> b11101111 +1 -> b11110000
-        $fromBlock = (~(1 << self::BitToWordIndex($from))) + 1;
+        $fromBlock = ((~(1 << $this->bitToBlockIndex($from))) + 1) & $fullblockMask;
         // f.e. bit 4 (0 index) = ~b00010000 -> b11101111 +1 -> ~b11110000 | b00010000 -> b00011111
-        $toBit = 1 << self::BitToWordIndex($to);
-        $toBlock = ~((~($toBit)) + 1) | $toBit;
-        $startWord = self::BitToBufferIndex($from);
-        $endWord = self::BitToBufferIndex($to);
+        $toBit = 1 << $this->bitToBlockIndex($to);
+        $toBlock = (~((~($toBit)) + 1) | $toBit) & $fullblockMask;
+        $startWord = $this->bitToIndex($from);
+        $endWord = $this->bitToIndex($to);
         // case 2.: from and to are in the same block
         if ($startWord === $endWord) {
-            $oldWord = $this->internalBitMap[$startWord];
+            $oldWord = $this->blockMap->readBlockMap($startWord) & $fullblockMask;
             $update = $oldWord | ($fromBlock & $toBlock);
             if ($update !== $oldWord) {
-                $this->internalBitMap[$startWord] = $update;
+                $this->blockMap->writeBlockMap($startWord, $update);
                 return true;
             }
             return false;
         }
         // case 3.: from and to are in the different blocks where to = from+1
         $changed = false;
-        $oldWord = $this->internalBitMap[$startWord];
+        $oldWord = $this->blockMap->readBlockMap($startWord) & $fullblockMask;
         if (($oldWord | $fromBlock) !== $oldWord) {
-            $this->internalBitMap[$startWord] = $oldWord | $fromBlock;
+            $this->blockMap->writeBlockMap($startWord, $oldWord | $fromBlock);
             $changed = true;
         }
-        $oldWord = $this->internalBitMap[$endWord];
+        $oldWord = $this->blockMap->readBlockMap($endWord) & $fullblockMask;
         if (($oldWord | $toBlock) !== $oldWord) {
-            $this->internalBitMap[$endWord] = $oldWord | $toBlock;
+            $this->blockMap->writeBlockMap($endWord, $oldWord | $toBlock);
             $changed = true;
         }
         // case 4.: from and to are in the different blocks where to = from+n with n > 1
         while (++$startWord < $endWord) {
-            $changed = $changed || (~0 !== $this->internalBitMap[$startWord]);
-            $this->internalBitMap[$startWord] = ~0;
+            $changed = $changed || ($fullblockMask !== ($this->blockMap->readBlockMap($startWord) & $fullblockMask));
+            $this->blockMap->writeBlockMap($startWord, $fullblockMask);
         }
         return $changed;
     }
