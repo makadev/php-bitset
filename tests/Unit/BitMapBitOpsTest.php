@@ -1,5 +1,6 @@
 <?php
 
+use makadev\BitSet\BitMap\MemoryBitMap;
 use makadev\BitSet\BitMap\SPLArrayBitMap;
 use makadev\BitSet\BitMap\StringBitMap;
 use PHPUnit\Framework\TestCase;
@@ -11,6 +12,7 @@ class BitMapBitOpsTest extends TestCase {
             [makadev\BitSet\BitMap::class],
             [SPLArrayBitMap::class],
             [StringBitMap::class],
+            [MemoryBitMap::class],
         ];
     }
 

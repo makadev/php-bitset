@@ -1,6 +1,7 @@
 <?php
 
 
+use makadev\BitSet\BitSet\MemoryBitSet;
 use makadev\BitSet\BitSet\SPLArrayBitSet;
 use makadev\BitSet\BitSet\StringBitSet;
 use PHPUnit\Framework\TestCase;
@@ -12,6 +13,7 @@ class BitSetTest extends TestCase {
             [makadev\BitSet\BitSet::class],
             [SPLArrayBitSet::class],
             [StringBitSet::class],
+            [MemoryBitSet::class],
         ];
     }
 
